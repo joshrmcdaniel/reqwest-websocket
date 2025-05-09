@@ -4,7 +4,7 @@ use crate::{
     protocol::{CloseCode, Message},
     Error,
 };
-use reqwest::{
+use reqwest_impersonate::{
     header::{HeaderName, HeaderValue},
     RequestBuilder, Response, StatusCode, Version,
 };
@@ -39,24 +39,24 @@ pub async fn send_request(
             let nonce_value = tungstenite::handshake::client::generate_key();
             let headers = request.headers_mut();
             headers.insert(
-                reqwest::header::CONNECTION,
+                reqwest_impersonate::header::CONNECTION,
                 HeaderValue::from_static("upgrade"),
             );
             headers.insert(
-                reqwest::header::UPGRADE,
+                reqwest_impersonate::header::UPGRADE,
                 HeaderValue::from_static("websocket"),
             );
             headers.insert(
-                reqwest::header::SEC_WEBSOCKET_KEY,
+                reqwest_impersonate::header::SEC_WEBSOCKET_KEY,
                 HeaderValue::from_str(&nonce_value).expect("nonce is a invalid header value"),
             );
             headers.insert(
-                reqwest::header::SEC_WEBSOCKET_VERSION,
+                reqwest_impersonate::header::SEC_WEBSOCKET_VERSION,
                 HeaderValue::from_static("13"),
             );
             if !protocols.is_empty() {
                 headers.insert(
-                    reqwest::header::SEC_WEBSOCKET_PROTOCOL,
+                    reqwest_impersonate::header::SEC_WEBSOCKET_PROTOCOL,
                     HeaderValue::from_str(&protocols.join(", "))
                         .expect("protocols is an invalid header value"),
                 );
@@ -84,7 +84,7 @@ pub async fn send_request(
 }
 
 pub type WebSocketStream =
-    async_tungstenite::WebSocketStream<tokio_util::compat::Compat<reqwest::Upgraded>>;
+    async_tungstenite::WebSocketStream<tokio_util::compat::Compat<reqwest_impersonate::Upgraded>>;
 
 /// Error during `Websocket` handshake.
 #[derive(Debug, thiserror::Error)]
@@ -92,7 +92,7 @@ pub enum HandshakeError {
     #[error("unsupported http version: {0:?}")]
     UnsupportedHttpVersion(Version),
 
-    #[error("the server responded with a different http version. this could be the case because reqwest silently upgraded the connection to http2. see: https://github.com/jgraef/reqwest-websocket/issues/2")]
+    #[error("the server responded with a different http version. this could be the case because reqwest_impersonate silently upgraded the connection to http2. see: https://github.com/jgraef/reqwest_impersonate-websocket/issues/2")]
     ServerRespondedWithDifferentVersion,
 
     #[error("missing header {header}")]
@@ -133,19 +133,19 @@ impl WebSocketResponse {
             return Err(HandshakeError::ServerRespondedWithDifferentVersion.into());
         }
 
-        if self.response.status() != reqwest::StatusCode::SWITCHING_PROTOCOLS {
+        if self.response.status() != reqwest_impersonate::StatusCode::SWITCHING_PROTOCOLS {
             tracing::debug!(status_code = %self.response.status(), "server responded with unexpected status code");
             return Err(HandshakeError::UnexpectedStatusCode(self.response.status()).into());
         }
 
-        if let Some(header) = headers.get(reqwest::header::CONNECTION) {
+        if let Some(header) = headers.get(reqwest_impersonate::header::CONNECTION) {
             if !header
                 .to_str()
                 .is_ok_and(|s| s.eq_ignore_ascii_case("upgrade"))
             {
                 tracing::debug!("server responded with invalid Connection header: {header:?}");
                 return Err(HandshakeError::UnexpectedHeaderValue {
-                    header: reqwest::header::CONNECTION,
+                    header: reqwest_impersonate::header::CONNECTION,
                     got: header.clone(),
                     expected: "upgrade".into(),
                 }
@@ -154,19 +154,19 @@ impl WebSocketResponse {
         } else {
             tracing::debug!("missing Connection header");
             return Err(HandshakeError::MissingHeader {
-                header: reqwest::header::CONNECTION,
+                header: reqwest_impersonate::header::CONNECTION,
             }
             .into());
         }
 
-        if let Some(header) = headers.get(reqwest::header::UPGRADE) {
+        if let Some(header) = headers.get(reqwest_impersonate::header::UPGRADE) {
             if !header
                 .to_str()
                 .is_ok_and(|s| s.eq_ignore_ascii_case("websocket"))
             {
                 tracing::debug!("server responded with invalid Upgrade header: {header:?}");
                 return Err(HandshakeError::UnexpectedHeaderValue {
-                    header: reqwest::header::UPGRADE,
+                    header: reqwest_impersonate::header::UPGRADE,
                     got: header.clone(),
                     expected: "websocket".into(),
                 }
@@ -175,7 +175,7 @@ impl WebSocketResponse {
         } else {
             tracing::debug!("missing Upgrade header");
             return Err(HandshakeError::MissingHeader {
-                header: reqwest::header::UPGRADE,
+                header: reqwest_impersonate::header::UPGRADE,
             }
             .into());
         }
@@ -183,13 +183,13 @@ impl WebSocketResponse {
         if let Some(nonce) = &self.nonce {
             let expected_nonce = tungstenite::handshake::derive_accept_key(nonce.as_bytes());
 
-            if let Some(header) = headers.get(reqwest::header::SEC_WEBSOCKET_ACCEPT) {
+            if let Some(header) = headers.get(reqwest_impersonate::header::SEC_WEBSOCKET_ACCEPT) {
                 if !header.to_str().is_ok_and(|s| s == expected_nonce) {
                     tracing::debug!(
                         "server responded with invalid Sec-Websocket-Accept header: {header:?}"
                     );
                     return Err(HandshakeError::UnexpectedHeaderValue {
-                        header: reqwest::header::SEC_WEBSOCKET_ACCEPT,
+                        header: reqwest_impersonate::header::SEC_WEBSOCKET_ACCEPT,
                         got: header.clone(),
                         expected: expected_nonce.into(),
                     }
@@ -198,14 +198,14 @@ impl WebSocketResponse {
             } else {
                 tracing::debug!("missing Sec-Websocket-Accept header");
                 return Err(HandshakeError::MissingHeader {
-                    header: reqwest::header::SEC_WEBSOCKET_ACCEPT,
+                    header: reqwest_impersonate::header::SEC_WEBSOCKET_ACCEPT,
                 }
                 .into());
             }
         }
 
         let protocol = headers
-            .get(reqwest::header::SEC_WEBSOCKET_PROTOCOL)
+            .get(reqwest_impersonate::header::SEC_WEBSOCKET_PROTOCOL)
             .and_then(|v| v.to_str().ok())
             .map(ToOwned::to_owned);
 

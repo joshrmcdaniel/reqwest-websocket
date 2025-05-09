@@ -1,5 +1,5 @@
 use futures_util::{SinkExt, StreamExt, TryStreamExt};
-use reqwest::Client;
+use reqwest_impersonate::Client;
 use reqwest_websocket::{Error, Message, RequestBuilderExt};
 
 #[tokio::main(flavor = "current_thread")]

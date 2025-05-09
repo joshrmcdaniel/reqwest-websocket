@@ -25,7 +25,23 @@ json = ["dep:serde", "dep:serde_json"]
 [dependencies]
 # pin version, see https://github.com/jgraef/reqwest-websocket/pull/33
 futures-util = { version = ">=0.3.31", default-features = false, features = ["sink"] }
-reqwest = { version = "0.12", default-features = false }
+reqwest-impersonate = { git = "https://github.com/joshrmcdaniel/reqwest-impersonate.git", rev="bf388f9", default-features = false, features = [
+  "stream",
+  "chrome",
+  "boring",
+  "blocking",
+  "gzip",
+  "deflate",
+  "json",
+  "brotli",
+  "rustls-tls",
+] }
+hyper-boring = { git = "https://github.com/joshrmcdaniel/boring", rev = "2aa86b7"}
+boring = { git = "https://github.com/joshrmcdaniel/boring", rev = "2aa86b7"}
+tokio-boring = { git = "https://github.com/joshrmcdaniel/boring", rev = "2aa86b7"}
+boring-sys = { git = "https://github.com/joshrmcdaniel/boring", rev = "2aa86b7"}
+foreign-types = { version = "0.5.0"}
+
 thiserror = "2"
 tracing = "0.1"
 serde = { version = "1.0", default-features = false, optional = true }
@@ -43,10 +59,24 @@ tokio = { version = "1", default-features = false, features = ["sync", "macros"]
 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt"] }
-reqwest = { version = "0.12", features = ["default-tls"] }
+reqwest-impersonate = { git = "https://github.com/joshrmcdaniel/reqwest-impersonate.git", rev="bf388f9", default-features = false, features = [
+  "stream",
+  "chrome",
+  "boring",
+  "blocking",
+  "gzip",
+  "deflate",
+  "json",
+  "brotli",
+  "rustls-tls",
+] }
 serde = { version = "1.0", features = ["derive"] }
 futures-util = { version = "0.3", default-features = false, features = ["sink", "alloc"] }
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
 wasm-bindgen-test = "0.3"
 wasm-bindgen-futures = "0.4"
+
+[patch.crates-io]
+h2 = { git = "https://github.com/4JX/h2.git", branch = "imp" }
+hyper = { git = "https://github.com/4JX/hyper.git", branch = "v0.14.18-patched" }

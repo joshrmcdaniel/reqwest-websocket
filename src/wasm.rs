@@ -4,7 +4,7 @@ use std::{
 };
 
 use futures_util::{Sink, Stream};
-use reqwest::{Request, Url};
+use reqwest_impersonate::{Request, Url};
 use tokio::sync::{mpsc, oneshot};
 use web_sys::{
     js_sys::{Array, ArrayBuffer, JsString, Uint8Array},

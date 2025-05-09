@@ -1,12 +1,12 @@
 #![forbid(unsafe_code)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
-//! Provides wrappers for [`reqwest`][2] to enable [`WebSocket`][1] connections.
+//! Provides wrappers for [`reqwest_impersonate`][2] to enable [`WebSocket`][1] connections.
 //!
 //! # Example
 //!
 //! ```
-//! # use reqwest::Client;
+//! # use reqwest_impersonate::Client;
 //! # use reqwest_websocket::{Message, Error};
 //! # use futures_util::{TryStreamExt, SinkExt};
 //! #
@@ -16,7 +16,7 @@
 //! # }
 //! #
 //! # async fn run() -> Result<(), Error> {
-//! // Extends the `reqwest::RequestBuilder` to allow WebSocket upgrades.
+//! // Extends the `reqwest_impersonate::RequestBuilder` to allow WebSocket upgrades.
 //! use reqwest_websocket::RequestBuilderExt;
 //!
 //! // Creates a GET request, upgrades and sends it.
@@ -43,7 +43,7 @@
 //! ```
 //!
 //! [1]: https://en.wikipedia.org/wiki/WebSocket
-//! [2]: https://docs.rs/reqwest/latest/reqwest/index.html
+//! [2]: https://docs.rs/reqwest_impersonate/latest/reqwest_impersonate/index.html
 
 #[cfg(feature = "json")]
 mod json;
@@ -64,7 +64,7 @@ pub use crate::native::HandshakeError;
 pub use crate::protocol::{CloseCode, Message};
 pub use bytes::Bytes;
 use futures_util::{Sink, SinkExt, Stream, StreamExt};
-use reqwest::{Client, ClientBuilder, IntoUrl, RequestBuilder};
+use reqwest_impersonate::{Client, ClientBuilder, IntoUrl, RequestBuilder};
 
 /// Errors returned by `reqwest_websocket`.
 #[derive(Debug, thiserror::Error)]
@@ -75,8 +75,8 @@ pub enum Error {
     #[error("websocket upgrade failed")]
     Handshake(#[from] HandshakeError),
 
-    #[error("reqwest error")]
-    Reqwest(#[from] reqwest::Error),
+    #[error("reqwest_impersonate error")]
+    Reqwest(#[from] reqwest_impersonate::Error),
 
     #[cfg(not(target_arch = "wasm32"))]
     #[cfg_attr(docsrs, doc(cfg(not(target_arch = "wasm32"))))]
@@ -100,8 +100,8 @@ pub enum Error {
 /// This is a shorthand for creating a [`Request`], sending it, and turning the
 /// [`Response`] into a [`WebSocket`].
 ///
-/// [`Request`]: reqwest::Request
-/// [`Response`]: reqwest::Response
+/// [`Request`]: reqwest_impersonate::Request
+/// [`Response`]: reqwest_impersonate::Response
 pub async fn websocket(url: impl IntoUrl) -> Result<WebSocket, Error> {
     builder_http1_only(Client::builder())
         .build()?
@@ -125,7 +125,7 @@ fn builder_http1_only(builder: ClientBuilder) -> ClientBuilder {
     builder
 }
 
-/// Trait that extends [`reqwest::RequestBuilder`] with an `upgrade` method.
+/// Trait that extends [`reqwest_impersonate::RequestBuilder`] with an `upgrade` method.
 pub trait RequestBuilderExt {
     /// Upgrades the [`RequestBuilder`] to perform a `WebSocket` handshake.
     ///
@@ -140,7 +140,7 @@ impl RequestBuilderExt for RequestBuilder {
     }
 }
 
-/// Wrapper for a [`reqwest::RequestBuilder`] that performs the
+/// Wrapper for a [`reqwest_impersonate::RequestBuilder`] that performs the
 /// `WebSocket` handshake when sent.
 pub struct UpgradedRequestBuilder {
     inner: RequestBuilder,
@@ -193,7 +193,7 @@ impl UpgradedRequestBuilder {
 /// The server's response to the `WebSocket` upgrade request.
 ///
 /// On non-wasm platforms, this implements `Deref<Target = Response>`, so you
-/// can access all the usual information from the [`reqwest::Response`].
+/// can access all the usual information from the [`reqwest_impersonate::Response`].
 pub struct UpgradeResponse {
     #[cfg(not(target_arch = "wasm32"))]
     inner: native::WebSocketResponse,
@@ -211,7 +211,7 @@ pub struct UpgradeResponse {
 
 #[cfg(not(target_arch = "wasm32"))]
 impl std::ops::Deref for UpgradeResponse {
-    type Target = reqwest::Response;
+    type Target = reqwest_impersonate::Response;
 
     fn deref(&self) -> &Self::Target {
         &self.inner.response
@@ -237,10 +237,10 @@ impl UpgradeResponse {
         Ok(WebSocket { inner, protocol })
     }
 
-    /// Consumes the response and returns the inner [`reqwest::Response`].
+    /// Consumes the response and returns the inner [`reqwest_impersonate::Response`].
     #[must_use]
     #[cfg(not(target_arch = "wasm32"))]
-    pub fn into_inner(self) -> reqwest::Response {
+    pub fn into_inner(self) -> reqwest_impersonate::Response {
         self.inner.response
     }
 }
@@ -338,7 +338,7 @@ impl Sink<Message> for WebSocket {
 #[cfg(test)]
 pub mod tests {
     use futures_util::{SinkExt, TryStreamExt};
-    use reqwest::Client;
+    use reqwest_impersonate::Client;
     #[cfg(target_arch = "wasm32")]
     use wasm_bindgen_test::wasm_bindgen_test;
 
